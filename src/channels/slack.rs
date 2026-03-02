@@ -31,7 +31,7 @@ pub const SETUP_DEF: DynamicChannelDef = DynamicChannelDef {
     fields: &[
         ChannelFieldDef {
             yaml_key: "bot_token",
-            label: "Slack bot token (xoxb-...)",
+            label: "Slack bot token (OAuth, xoxb-...)",
             default: "",
             secret: true,
             required: true,
@@ -411,6 +411,7 @@ async fn resolve_bot_user_id(bot_token: &str) -> Result<String, String> {
         .json()
         .await
         .map_err(|e| format!("Failed to parse auth.test response: {e}"))?;
+    info!("Slack auth.test response: {}", body);
 
     if body.get("ok").and_then(|v| v.as_bool()) != Some(true) {
         let err = body
@@ -720,7 +721,16 @@ async fn handle_slack_message(
     let trimmed = text.trim();
     let mention_tag = format!("<@{bot_user_id}>");
     let should_respond = is_dm || is_app_mention || text.contains(&mention_tag);
-    if is_slash_command(trimmed) {
+
+    let is_slash = is_slash_command(trimmed);
+
+    // In group chats, only addressed messages should enter session history.
+    // Otherwise old non-mention chatter leaks into context once a later mention arrives.
+    if !should_respond && !is_slash {
+        return;
+    }
+
+    if is_slash {
         if !should_respond && !app_state.config.allow_group_slash_without_mention {
             return;
         }
@@ -776,11 +786,6 @@ async fn handle_slack_message(
             "Slack: skipping duplicate message chat_id={} message_id={}",
             chat_id, inbound_message_id
         );
-        return;
-    }
-
-    // Determine if we should respond
-    if !should_respond {
         return;
     }
 

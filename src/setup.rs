@@ -4698,7 +4698,7 @@ fn draw_ui(frame: &mut ratatui::Frame<'_>, app: &SetupApp) {
         Line::from("• Tab / Shift+Tab: next/prev field"),
         Line::from("• ↑/↓ or j/k or Ctrl+N/Ctrl+P: move"),
         Line::from("• In selection list: Enter confirm, Esc close"),
-        Line::from("• PgUp/PgDn or Ctrl+U/Ctrl+D: page up/down"),
+        Line::from("• PgUp/PgDn or Ctrl+U/Ctrl+F: page up/down"),
         Line::from("• g / G: jump to top / bottom"),
         Line::from("• ←/→ on provider/model: rotate presets"),
         Line::from("• e: force manual text edit"),
@@ -5218,11 +5218,11 @@ fn run_wizard(mut terminal: DefaultTerminal) -> Result<bool, MicroClawError> {
                 KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => app.next(),
                 KeyCode::PageDown => app.page_down(app.field_window.max(1)),
                 KeyCode::PageUp => app.page_up(app.field_window.max(1)),
-                KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    app.page_down(app.field_window.max(1))
-                }
                 KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                     app.page_up(app.field_window.max(1))
+                }
+                KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    app.page_down(app.field_window.max(1))
                 }
                 KeyCode::Char('g') if !key.modifiers.contains(KeyModifiers::SHIFT) => {
                     app.jump_top()
