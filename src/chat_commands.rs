@@ -188,6 +188,12 @@ pub async fn handle_chat_command(
         );
     }
 
+    if let Some(plugin_response) =
+        maybe_handle_plugin_command(&state.config, trimmed, chat_id, caller_channel).await
+    {
+        return Some(plugin_response);
+    }
+
     None
 }
 

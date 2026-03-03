@@ -65,18 +65,13 @@ fn default_reasoning_display() -> ReasoningDisplayMode {
     ReasoningDisplayMode::Hidden
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ReasoningDisplayMode {
+    #[default]
     Hidden,
     Inline,
     SeparateMessage,
-}
-
-impl Default for ReasoningDisplayMode {
-    fn default() -> Self {
-        ReasoningDisplayMode::Hidden
-    }
 }
 
 /// State for streaming message editing
@@ -86,7 +81,6 @@ struct StreamingState {
     reasoning_buffer: String,
     in_reasoning: bool,
     edit_count: usize,
-    last_edit: Instant,
 }
 
 impl StreamingState {
@@ -97,7 +91,6 @@ impl StreamingState {
             reasoning_buffer: String::new(),
             in_reasoning: false,
             edit_count: 0,
-            last_edit: Instant::now(),
         }
     }
 }
@@ -1450,7 +1443,7 @@ async fn send_streaming_response(
                 // Check if we should edit now
                 let should_edit = last_edit_time.elapsed() >= edit_interval
                     || streaming_state.edit_count < 3 // Edit more frequently at start
-                    || streaming_state.buffer.len() % 100 == 0; // Edit every 100 chars
+                    || streaming_state.buffer.len().is_multiple_of(100); // Edit every 100 chars
 
                 if should_edit && streaming_state.edit_count < config.max_edits_per_message {
                     let display_text = if streaming_state.in_reasoning
@@ -1484,7 +1477,7 @@ async fn send_streaming_response(
                         bot.edit_message_text(chat_id, streaming_state.message_id, edit_text);
 
                     // Try to edit with text (ParseMode doesn't work the same way for edits)
-                    if let Err(_) = edit_req.await {
+                    if edit_req.await.is_err() {
                         let _ = bot
                             .edit_message_text(
                                 chat_id,
@@ -1541,7 +1534,7 @@ async fn send_streaming_response(
     let final_edit = bot.edit_message_text(chat_id, streaming_state.message_id, final_text);
 
     // Try to edit - ParseMode doesn't work the same way for edits
-    if let Err(_) = final_edit.await {
+    if final_edit.await.is_err() {
         let _ = bot
             .edit_message_text(chat_id, streaming_state.message_id, final_text)
             .await;

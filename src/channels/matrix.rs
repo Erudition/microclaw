@@ -141,18 +141,13 @@ fn default_matrix_max_edits_per_message() -> usize {
     25 // Leave buffer for Matrix rate limits
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum MatrixReasoningDisplayMode {
+    #[default]
     Hidden,
     Inline,
     SeparateMessage,
-}
-
-impl Default for MatrixReasoningDisplayMode {
-    fn default() -> Self {
-        MatrixReasoningDisplayMode::Hidden
-    }
 }
 
 fn default_matrix_reasoning_display() -> MatrixReasoningDisplayMode {
@@ -1771,8 +1766,6 @@ async fn handle_matrix_reaction(
 struct MatrixStreamingState {
     initial_event_id: String,
     room_id: String,
-    edit_count: usize,
-    last_edit: std::time::Instant,
     current_content: String,
     reasoning_content: Option<String>,
 }
@@ -1962,8 +1955,6 @@ async fn send_matrix_streaming_response(
                     streaming_state = Some(MatrixStreamingState {
                         initial_event_id,
                         room_id: room_id.to_string(),
-                        edit_count: 0,
-                        last_edit: std::time::Instant::now(),
                         current_content: String::new(),
                         reasoning_content: None,
                     });

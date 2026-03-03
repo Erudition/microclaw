@@ -1969,7 +1969,6 @@ mod tests {
         );
         let web_state = test_web_state_from_app_state(
             test_state_with_config(Box::new(DummyLlm), cfg),
-            None,
             WebLimits::default(),
         );
         let app = build_router(web_state);
