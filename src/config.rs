@@ -138,6 +138,18 @@ fn default_web_session_idle_ttl_seconds() -> u64 {
 fn default_allow_group_slash_without_mention() -> bool {
     false
 }
+fn default_subagent_max_concurrent() -> usize {
+    4
+}
+fn default_subagent_max_active_per_chat() -> usize {
+    5
+}
+fn default_subagent_run_timeout_secs() -> u64 {
+    900
+}
+fn default_subagent_announce() -> bool {
+    true
+}
 
 fn default_model_prices() -> Vec<ModelPrice> {
     Vec::new()
@@ -222,6 +234,29 @@ pub struct ResolvedLlmProviderProfile {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SubagentConfig {
+    #[serde(default = "default_subagent_max_concurrent")]
+    pub max_concurrent: usize,
+    #[serde(default = "default_subagent_max_active_per_chat")]
+    pub max_active_per_chat: usize,
+    #[serde(default = "default_subagent_run_timeout_secs")]
+    pub run_timeout_secs: u64,
+    #[serde(default = "default_subagent_announce")]
+    pub announce_to_chat: bool,
+}
+
+impl Default for SubagentConfig {
+    fn default() -> Self {
+        Self {
+            max_concurrent: default_subagent_max_concurrent(),
+            max_active_per_chat: default_subagent_max_active_per_chat(),
+            run_timeout_secs: default_subagent_run_timeout_secs(),
+            announce_to_chat: default_subagent_announce(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
     // --- LLM / API ---
     #[serde(default = "default_llm_provider")]
@@ -258,6 +293,8 @@ pub struct Config {
     pub default_mcp_request_timeout_secs: u64,
     #[serde(default)]
     pub show_thinking: bool,
+    #[serde(default)]
+    pub subagents: SubagentConfig,
     /// OpenAI-compatible request-body overrides applied for all models/providers.
     /// Set a key to `null` to remove that field from the outgoing JSON body.
     #[serde(default)]
@@ -598,6 +635,7 @@ impl Config {
             discord_no_mention: false,
             allow_group_slash_without_mention: false,
             show_thinking: false,
+            subagents: SubagentConfig::default(),
             openai_compat_body_overrides: HashMap::new(),
             openai_compat_body_overrides_by_provider: HashMap::new(),
             openai_compat_body_overrides_by_model: HashMap::new(),
@@ -988,6 +1026,15 @@ Use operator password + API keys for Web auth."
         }
         if self.default_mcp_request_timeout_secs == 0 {
             self.default_mcp_request_timeout_secs = default_mcp_request_timeout_secs();
+        }
+        if self.subagents.max_concurrent == 0 {
+            self.subagents.max_concurrent = default_subagent_max_concurrent();
+        }
+        if self.subagents.max_active_per_chat == 0 {
+            self.subagents.max_active_per_chat = default_subagent_max_active_per_chat();
+        }
+        if self.subagents.run_timeout_secs == 0 {
+            self.subagents.run_timeout_secs = default_subagent_run_timeout_secs();
         }
         self.tool_timeout_overrides = self
             .tool_timeout_overrides

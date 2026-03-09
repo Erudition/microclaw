@@ -11,7 +11,7 @@ pub mod read_file;
 pub mod schedule;
 pub mod send_message;
 pub mod structured_memory;
-pub mod sub_agent;
+pub mod subagents;
 pub mod sync_skills;
 pub mod time_math;
 pub mod todo;
@@ -47,7 +47,15 @@ impl ToolRegistry {
     fn should_inject_default_chat_id(tool_name: &str) -> bool {
         matches!(
             tool_name,
-            "write_memory" | "read_memory" | "todo_read" | "todo_write" | "send_message"
+            "write_memory"
+                | "read_memory"
+                | "todo_read"
+                | "todo_write"
+                | "send_message"
+                | "sessions_spawn"
+                | "subagents_list"
+                | "subagents_info"
+                | "subagents_kill"
         )
     }
 
@@ -195,7 +203,14 @@ impl ToolRegistry {
                 db.clone(),
                 &config.data_dir,
             )),
-            Box::new(sub_agent::SubAgentTool::new(config, db.clone())),
+            Box::new(subagents::SessionsSpawnTool::new(
+                config,
+                db.clone(),
+                channel_registry.clone(),
+            )),
+            Box::new(subagents::SubagentsListTool::new(db.clone())),
+            Box::new(subagents::SubagentsInfoTool::new(db.clone())),
+            Box::new(subagents::SubagentsKillTool::new(config, db.clone())),
             Box::new(activate_skill::ActivateSkillTool::new_with_runtime(
                 &skills_data_dir,
                 &config.data_dir,

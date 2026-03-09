@@ -1993,9 +1993,10 @@ mod tests {
     }
 
     #[test]
-    fn test_build_system_prompt_mentions_sub_agent() {
+    fn test_build_system_prompt_mentions_subagent_tools() {
         let prompt = build_system_prompt("testbot", "telegram", "", 12345, "", "UTC", None);
-        assert!(prompt.contains("sub_agent"));
+        assert!(prompt.contains("sessions_spawn"));
+        assert!(prompt.contains("subagents_list"));
     }
 
     #[test]

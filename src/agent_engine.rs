@@ -1989,7 +1989,7 @@ You have access to the following capabilities:
 - Schedule tasks (`schedule_task`, `list_scheduled_tasks`, `pause/resume/cancel_scheduled_task`, `get_task_history`)
 - Export chat history to markdown (`export_chat`)
 - Understand images sent by users (they appear as image content blocks)
-- Delegate self-contained sub-tasks to a parallel agent (`sub_agent`)
+- Spawn and manage asynchronous sub-agent runs (`sessions_spawn`, `subagents_list`, `subagents_info`, `subagents_kill`)
 - Activate agent skills (`activate_skill`) for specialized tasks
 - Install skills from repos (`sync_skills`, `clawhub_install`, `clawhub_search`) — use these instead of manually writing SKILL.md files. Skills go in ~/.microclaw/skills/ (or configured skills dir).
 - Plan and track tasks with a todo list (`todo_read`, `todo_write`) — use this to break down complex tasks into steps, track progress, and stay organized
