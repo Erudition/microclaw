@@ -612,6 +612,9 @@ fn process_openai_stream_event(
                         other => entry.input_json.push_str(&other.to_string()),
                     }
                 }
+                if let Some(sig) = function.get("thought_signature").and_then(|s| s.as_str()) {
+                    entry.thought_signature = Some(sig.to_string());
+                }
             }
             if let Some(sig) = tc
                 .get("extra_content")
@@ -1075,6 +1078,7 @@ struct OaiMessage {
 struct OaiToolCall {
     id: String,
     function: OaiFunction,
+    #[serde(default)]
     extra_content: Option<serde_json::Value>,
 }
 
@@ -1082,6 +1086,8 @@ struct OaiToolCall {
 struct OaiFunction {
     name: String,
     arguments: String,
+    #[serde(default)]
+    thought_signature: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2074,7 +2080,8 @@ fn translate_oai_response(oai: OaiResponse) -> MessagesResponse {
                 .extra_content
                 .and_then(|e| e.get("google").cloned())
                 .and_then(|g| g.get("thought_signature").cloned())
-                .and_then(|s| s.as_str().map(|s| s.to_string()));
+                .and_then(|s| s.as_str().map(|s| s.to_string()))
+                .or(tc.function.thought_signature);
             content.push(ResponseContentBlock::ToolUse {
                 id: tc.id,
                 name: tc.function.name,
@@ -2206,7 +2213,20 @@ mod tests {
         }];
         let out = translate_messages_to_oai("", &msgs);
         let tc = out[0]["tool_calls"].as_array().unwrap();
-        assert_eq!(tc[0]["function"]["thought_signature"], "sig_abc");
+        assert_eq!(tc[0]["extra_content"]["google"]["thought_signature"], "sig_abc");
+    }
+
+    #[test]
+    fn test_translate_oai_response_tool_calls_legacy_function_thought_signature() {
+        let raw = r#"{"choices":[{"message":{"content":null,"reasoning_content":null,"tool_calls":[{"id":"call_1","function":{"name":"bash","arguments":"{\"command\":\"ls\"}","thought_signature":"sig_legacy"}}]},"finish_reason":"tool_calls"}],"usage":null}"#;
+        let oai: OaiResponse = serde_json::from_str(raw).unwrap();
+        let resp = translate_oai_response(oai);
+        match &resp.content[0] {
+            ResponseContentBlock::ToolUse {
+                thought_signature, ..
+            } => assert_eq!(thought_signature.as_deref(), Some("sig_legacy")),
+            _ => panic!("Expected ToolUse"),
+        }
     }
 
     #[test]
@@ -2479,6 +2499,7 @@ mod tests {
                         function: OaiFunction {
                             name: "bash".into(),
                             arguments: r#"{"command":"ls"}"#.into(),
+                            thought_signature: None,
                         },
                         extra_content: None,
                     }]),
@@ -2577,6 +2598,7 @@ mod tests {
                         function: OaiFunction {
                             name: "read_file".into(),
                             arguments: r#"{"path":"/tmp/x"}"#.into(),
+                            thought_signature: None,
                         },
                         extra_content: None,
                     }]),
@@ -2609,6 +2631,7 @@ mod tests {
                         function: OaiFunction {
                             name: "bash".into(),
                             arguments: r#"{"command":"ls"}"#.into(),
+                            thought_signature: None,
                         },
                         extra_content: None,
                     }]),
