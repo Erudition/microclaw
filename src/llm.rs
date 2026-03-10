@@ -585,15 +585,13 @@ fn process_openai_stream_event(
         for tc in tc_arr {
             let index = if let Some(i) = tc.get("index").and_then(|i| i.as_u64()) {
                 usize::try_from(i).ok()
+            } else if let Some(id) = tc.get("id").and_then(|v| v.as_str()) {
+                tool_calls
+                    .iter()
+                    .find(|(_, entry)| entry.id == id)
+                    .map(|(idx, _)| *idx)
             } else {
-                if let Some(id) = tc.get("id").and_then(|v| v.as_str()) {
-                    tool_calls
-                        .iter()
-                        .find(|(_, entry)| entry.id == id)
-                        .map(|(idx, _)| *idx)
-                } else {
-                    None
-                }
+                None
             };
 
             let index = index.unwrap_or_else(|| {
@@ -1476,7 +1474,7 @@ impl LlmProvider for OpenAiProvider {
                 text: combined_text,
             });
         }
-        for (_index, tool) in &tool_calls {
+        for tool in tool_calls.values() {
             content.push(ResponseContentBlock::ToolUse {
                 id: tool.id.clone(),
                 name: tool.name.clone(),
@@ -2481,8 +2479,8 @@ mod tests {
                         function: OaiFunction {
                             name: "bash".into(),
                             arguments: r#"{"command":"ls"}"#.into(),
-                            thought_signature: None,
                         },
+                        extra_content: None,
                     }]),
                 },
                 finish_reason: Some("tool_calls".into()),
@@ -2579,8 +2577,8 @@ mod tests {
                         function: OaiFunction {
                             name: "read_file".into(),
                             arguments: r#"{"path":"/tmp/x"}"#.into(),
-                            thought_signature: None,
                         },
+                        extra_content: None,
                     }]),
                 },
                 finish_reason: Some("tool_calls".into()),
@@ -2611,8 +2609,8 @@ mod tests {
                         function: OaiFunction {
                             name: "bash".into(),
                             arguments: r#"{"command":"ls"}"#.into(),
-                            thought_signature: None,
                         },
+                        extra_content: None,
                     }]),
                 },
                 finish_reason: Some("tool_calls".into()),
